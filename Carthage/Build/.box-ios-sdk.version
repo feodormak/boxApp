@@ -1,0 +1,9 @@
+{
+  "commitish" : "v1.1.1",
+  "iOS" : [
+    {
+      "name" : "BoxContentSDK",
+      "hash" : "5e3a6b73029fa11b08af3ba6f77875f282a47954f7b3487b95fe9b3b4b570ce4"
+    }
+  ]
+}
