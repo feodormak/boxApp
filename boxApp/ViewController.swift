@@ -8,7 +8,7 @@
 
 import UIKit
 import BoxContentSDK
-//import Disk
+import Disk
 
 struct BoxFileBasics: Codable {
     let name: String
@@ -41,7 +41,7 @@ class ViewController: UIViewController {
     @IBAction func getFiles(_ sender: UIButton) {
         let contentClient:BOXContentClient = BOXContentClient.default()
         contentClient.authenticate(completionBlock: {(user:BOXUser?, error:Error?) -> Void in
-            if(error == nil){
+            if error == nil {
                 if user != nil { self.connectionStatus.text = user!.login as String }
                 
                 let folderItemsRequest:BOXFolderItemsRequest = contentClient.folderItemsRequest(withID: "0")
@@ -66,6 +66,13 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        print("prev",UserDefaultsManager.storedFiles)
+        //UserDefaultsManager.storedFiles = [BoxFileBasics]()
+        UserDefaultsManager.storedFiles?.append(BoxFileBasics(name: "a", modelID: "a", version: "1"))
+        print("after",UserDefaultsManager.storedFiles)
+
+        UserDefaultsManager.lastSyncedDate = Date()
+        print(UserDefaultsManager.lastSyncedDate)
         // Do any additional setup after loading the view, typically from a nib.
     }
     
@@ -103,13 +110,13 @@ class ViewController: UIViewController {
             //print(totalTransferred, totalExpected)
         }, completion: { (error:Error!) in
             if error == nil {
-                /*
+                
                 do {
                     let image = UIImage(contentsOfFile: localFilePath)
-                    try Disk.save(image, to: .applicationSupport, as: boxItem.name)
+                    try Disk.save(image!, to: .applicationSupport, as: boxItem.name)
                 }
                 catch { print("error saving file") }
-                */
+                
             }
             else { print("DOWNLOADING FILE ERROR: \(error)") }
         } )

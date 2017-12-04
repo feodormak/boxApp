@@ -13,6 +13,7 @@
 		FE20B1E41F96550D00EAFDFB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FE20B1E31F96550D00EAFDFB /* Assets.xcassets */; };
 		FE20B1E71F96550D00EAFDFB /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FE20B1E51F96550D00EAFDFB /* LaunchScreen.storyboard */; };
 		FE20B1FB1F9665E200EAFDFB /* BoxContentSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE20B1FA1F9665E100EAFDFB /* BoxContentSDK.framework */; };
+		FE2239801FD3F25A00A54DAD /* UserDefaultsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */; };
 		FE5A44031F9F986F00C26FA6 /* Disk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE5A44021F9F986F00C26FA6 /* Disk.framework */; };
 /* End PBXBuildFile section */
 
@@ -25,6 +26,7 @@
 		FE20B1E61F96550D00EAFDFB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		FE20B1E81F96550D00EAFDFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		FE20B1FA1F9665E100EAFDFB /* BoxContentSDK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BoxContentSDK.framework; path = Carthage/Build/iOS/BoxContentSDK.framework; sourceTree = "<group>"; };
+		FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsManager.swift; sourceTree = "<group>"; };
 		FE5A44021F9F986F00C26FA6 /* Disk.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Disk.framework; path = Carthage/Build/iOS/Disk.framework; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -63,6 +65,7 @@
 			children = (
 				FE20B1DC1F96550D00EAFDFB /* AppDelegate.swift */,
 				FE20B1DE1F96550D00EAFDFB /* ViewController.swift */,
+				FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */,
 				FE20B1E01F96550D00EAFDFB /* Main.storyboard */,
 				FE20B1E31F96550D00EAFDFB /* Assets.xcassets */,
 				FE20B1E51F96550D00EAFDFB /* LaunchScreen.storyboard */,
@@ -175,6 +178,7 @@
 			files = (
 				FE20B1DF1F96550D00EAFDFB /* ViewController.swift in Sources */,
 				FE20B1DD1F96550D00EAFDFB /* AppDelegate.swift in Sources */,
+				FE2239801FD3F25A00A54DAD /* UserDefaultsManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
