@@ -15,6 +15,7 @@
 		FE20B1FB1F9665E200EAFDFB /* BoxContentSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE20B1FA1F9665E100EAFDFB /* BoxContentSDK.framework */; };
 		FE2239801FD3F25A00A54DAD /* UserDefaultsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */; };
 		FE5A44031F9F986F00C26FA6 /* Disk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE5A44021F9F986F00C26FA6 /* Disk.framework */; };
+		FEF178601FD82DAE0092A7C8 /* SyncronisedArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEF1785F1FD82DAE0092A7C8 /* SyncronisedArray.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		FE20B1FA1F9665E100EAFDFB /* BoxContentSDK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = BoxContentSDK.framework; path = Carthage/Build/iOS/BoxContentSDK.framework; sourceTree = "<group>"; };
 		FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsManager.swift; sourceTree = "<group>"; };
 		FE5A44021F9F986F00C26FA6 /* Disk.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Disk.framework; path = Carthage/Build/iOS/Disk.framework; sourceTree = "<group>"; };
+		FEF1785F1FD82DAE0092A7C8 /* SyncronisedArray.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncronisedArray.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +67,7 @@
 			children = (
 				FE20B1DC1F96550D00EAFDFB /* AppDelegate.swift */,
 				FE20B1DE1F96550D00EAFDFB /* ViewController.swift */,
+				FEF1785F1FD82DAE0092A7C8 /* SyncronisedArray.swift */,
 				FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */,
 				FE20B1E01F96550D00EAFDFB /* Main.storyboard */,
 				FE20B1E31F96550D00EAFDFB /* Assets.xcassets */,
@@ -177,6 +180,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				FE20B1DF1F96550D00EAFDFB /* ViewController.swift in Sources */,
+				FEF178601FD82DAE0092A7C8 /* SyncronisedArray.swift in Sources */,
 				FE20B1DD1F96550D00EAFDFB /* AppDelegate.swift in Sources */,
 				FE2239801FD3F25A00A54DAD /* UserDefaultsManager.swift in Sources */,
 			);

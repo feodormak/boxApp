@@ -18,24 +18,30 @@ struct BoxFileBasics: Codable {
 
 class ViewController: UIViewController {
     //let contentClient:BOXContentClient = BOXContentClient.default()
-    var onlineFiles = [BoxFileBasics]()
+    //var onlineFiles = [BoxFileBasics]()
+    var onlineFiles = SynchronizedArray<BoxFileBasics>()
     
     @IBOutlet weak var connectionStatus: UILabel!
     @IBOutlet weak var numberOfFiles: UILabel!
     @IBOutlet weak var fileNames: UILabel!
     
     @IBAction func saveToAppSupp(_ sender: UIButton) {
-      let contentClient:BOXContentClient = BOXContentClient.default()
-        contentClient.authenticate(completionBlock: {(user: BOXUser?, error:Error!)-> Void in
-            if error == nil && user != nil { self.getFolderItems(contentClient: contentClient, folderID: "0")}
+        let contentClient:BOXContentClient = BOXContentClient.default()
+        contentClient.authenticate(completionBlock: {
+            (user: BOXUser?, error:Error!)-> Void in
+            if error == nil && user != nil { self.getFolderItems(contentClient: contentClient, folderID: "0") }
+            print("that is last")
         })
-        print("that is last")
-        /*    let image = UIImage(named: "apple.png")
-        do {
-            try Disk.save(image!, to: .applicationSupport, as: "apple.png")
-        }
-        catch { print("error saving") }
-     */
+    
+        
+        
+            /*    let image = UIImage(named: "apple.png")
+         do {
+         try Disk.save(image!, to: .applicationSupport, as: "apple.png")
+         }
+         catch { print("error saving") }
+         */
+        
     }
     
     @IBAction func getFiles(_ sender: UIButton) {
@@ -66,41 +72,41 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        print("prev",UserDefaultsManager.storedFiles)
-        //UserDefaultsManager.storedFiles = [BoxFileBasics]()
-        UserDefaultsManager.storedFiles?.append(BoxFileBasics(name: "a", modelID: "a", version: "1"))
-        print("after",UserDefaultsManager.storedFiles)
-
-        UserDefaultsManager.lastSyncedDate = Date()
-        print(UserDefaultsManager.lastSyncedDate)
-        // Do any additional setup after loading the view, typically from a nib.
+        print("prev",UserDefaultsManager.storedFiles?.count)
+        //UserDefaultsManager.storedFiles = nil
+        print("after",UserDefaultsManager.storedFiles?.count)
+        
+        //UserDefaultsManager.lastSyncedDate = Date()
+        //print(UserDefaultsManager.lastSyncedDate)
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
     
     func getFolderItems(contentClient:BOXContentClient ,folderID:String) {
         let folderItemsRequest:BOXFolderItemsRequest = contentClient.folderItemsRequest(withID: folderID)
-        folderItemsRequest.perform { (items:[BOXItem]?, error:Error!) in
-            if error == nil {
-                if items != nil {
+        
+        //DispatchQueue.global(qos: .userInitiated).async {
+            
+        
+            
+            folderItemsRequest.perform { (items:[BOXItem]?, error:Error!) in
+                
+                if error == nil && items != nil {
                     for item in items! {
                         if item.isFile == true {
-                            print(item.name, item.modelID, item.etag)
                             self.onlineFiles.append(BoxFileBasics(name: item.name, modelID: item.modelID, version: item.etag))
+                            print(item.name, item.modelID, item.etag)
                         }
-                        else if item.isFolder == true { self.getFolderItems(contentClient: contentClient, folderID: item.modelID) }
+                        else if item.isFolder == true { self.getFolderItems(contentClient: contentClient, folderID: item.modelID)  }
                     }
                 }
-                else { print("folder is empty") }
+                else { print("error getting folder") }
+                
             }
-            else { print("error getting folder") }
-        }
+        //}
+        print("online files: ", onlineFiles.count)
     }
     
-
+    
     func boxFileDownload(contentClient:BOXContentClient, boxItem: BOXItem){
         let localFilePath: String = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(boxItem.name).path
         let downloadRequest = contentClient.fileDownloadRequest(withID: boxItem.modelID, toLocalFilePath: localFilePath)
