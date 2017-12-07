@@ -8,12 +8,17 @@
 
 import UIKit
 import BoxContentSDK
+import SystemConfiguration
 import Disk
 
 struct BoxFileBasics: Codable {
     let name: String
     let modelID: String
     var version: String
+}
+
+enum UpdateManagerConstants {
+    static let timeoutInterval:DispatchTime = .now() + 15
 }
 
 class ViewController: UIViewController {
@@ -27,31 +32,52 @@ class ViewController: UIViewController {
     
     @IBAction func saveToAppSupp(_ sender: UIButton) {
         let contentClient:BOXContentClient = BOXContentClient.default()
-        let dispatchGroup = DispatchGroup()
+        
+        if self.connectedToNetwork() == false {
+            print("no internet")
+            return
+        }
         
         self.onlineFiles.removeAll()
-        DispatchQueue.global(qos: .userInitiated).async {
-            dispatchGroup.enter()
-            contentClient.authenticate { (user: BOXUser?, error:Error!) in
-                if error == nil && user != nil {
-                    self.getFolderItems(contentClient: contentClient, folderID: "0") { fileList in
-                        if fileList != nil { self.onlineFiles.append(fileList!) }
-                        print("main", self.onlineFiles.count)
-                        dispatchGroup.leave()
-                    }
-                }
-            }
-            let groupWait = dispatchGroup.wait(timeout: .now() + 5)
-            if groupWait == .timedOut { print("timedOUt") }
-            else { print("done") }
-        }
-
-            /*    let image = UIImage(named: "apple.png")
+        
+        if contentClient.session.isAuthorized() == false { contentClient.authenticate{(user, error) in
+            if error == nil && user != nil { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in })}
+            } }
+        
+        else { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in }) }
+        
+        
+        /*    let image = UIImage(named: "apple.png")
          do {
          try Disk.save(image!, to: .applicationSupport, as: "apple.png")
          }
          catch { print("error saving") }
          */
+    }
+    
+    func getItemsFromBaseFolder(contentClient: BOXContentClient, completionHandler: @escaping(DispatchTimeoutResult)-> Void) {
+        let dispatchGroup = DispatchGroup()
+        DispatchQueue.global(qos: .userInitiated).async {
+            print("started: \(Date())")
+            dispatchGroup.enter()
+            let workItem = DispatchWorkItem {
+                self.getFolderItems(contentClient: contentClient, folderID: "0") { fileList in
+                    if fileList != nil { self.onlineFiles.append(fileList!) }
+                    print("main", self.onlineFiles.count)
+                    dispatchGroup.leave()
+                }
+            }
+            DispatchQueue.global(qos: .userInitiated).async(execute: workItem)
+            
+            let groupWait = dispatchGroup.wait(timeout: UpdateManagerConstants.timeoutInterval)
+            if groupWait == .timedOut {
+                print("timedOUt")
+                workItem.cancel()
+            }
+            else { print("done") }
+            
+            completionHandler(groupWait)
+        }
     }
     
     func getFolderItems(contentClient:BOXContentClient ,folderID:String, completionHanlder: @escaping ([BoxFileBasics]?) -> Void) {
@@ -65,7 +91,7 @@ class ViewController: UIViewController {
                     for item in items! {
                         if item.isFile == true {
                             fileList.append(BoxFileBasics(name: item.name, modelID: item.modelID, version: item.etag))
-                            print(item.name, item.modelID, item.etag, fileList.count)
+                           // print(item.name, item.modelID, item.etag, fileList.count)
                         }
                         else if item.isFolder == true {
                             dispatchGroup.enter()
@@ -79,14 +105,13 @@ class ViewController: UIViewController {
                 else { print("error getting folder") }
                 dispatchGroup.wait()
                 DispatchQueue.main.async {
-                    print("func: ", folderID, fileList.count)
+                   // print("func: ", folderID, fileList.count)
                     completionHanlder(fileList)
                 }
             }
         }
-        
-        
-   }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: UpdateManagerConstants.timeoutInterval, execute: { folderItemsRequest.cancel() })
+    }
     
     @IBAction func getFiles(_ sender: UIButton) {
         let contentClient:BOXContentClient = BOXContentClient.default()
@@ -146,5 +171,32 @@ class ViewController: UIViewController {
             else { print("DOWNLOADING FILE ERROR: \(error)") }
         } )
     }
+    
+    private func connectedToNetwork() -> Bool {
+        
+        var zeroAddress = sockaddr_in()
+        zeroAddress.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+        zeroAddress.sin_family = sa_family_t(AF_INET)
+        
+        guard let defaultRouteReachability = withUnsafePointer(to: &zeroAddress, {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                SCNetworkReachabilityCreateWithAddress(nil, $0)
+            }
+        }) else {
+            return false
+        }
+        
+        var flags: SCNetworkReachabilityFlags = []
+        if !SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags) {
+            return false
+        }
+        
+        let isReachable = flags.contains(.reachable)
+        let needsConnection = flags.contains(.connectionRequired)
+        
+        return (isReachable && !needsConnection)
+    }
+    
+
 }
 

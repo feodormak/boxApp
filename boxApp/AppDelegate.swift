@@ -21,6 +21,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let clientSecret = "CHZu93A1kbLX8VYjaKGoHjbFLKuWohK2"
         BOXContentClient.setClientID(clientID, clientSecret: clientSecret)
         
+        
         return true
     }
 
