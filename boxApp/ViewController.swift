@@ -27,22 +27,66 @@ class ViewController: UIViewController {
     
     @IBAction func saveToAppSupp(_ sender: UIButton) {
         let contentClient:BOXContentClient = BOXContentClient.default()
-        contentClient.authenticate(completionBlock: {
-            (user: BOXUser?, error:Error!)-> Void in
-            if error == nil && user != nil { self.getFolderItems(contentClient: contentClient, folderID: "0") }
-            print("that is last")
-        })
-    
+        let dispatchGroup = DispatchGroup()
         
-        
+        self.onlineFiles.removeAll()
+        DispatchQueue.global(qos: .userInitiated).async {
+            dispatchGroup.enter()
+            contentClient.authenticate { (user: BOXUser?, error:Error!) in
+                if error == nil && user != nil {
+                    self.getFolderItems(contentClient: contentClient, folderID: "0") { fileList in
+                        if fileList != nil { self.onlineFiles.append(fileList!) }
+                        print("main", self.onlineFiles.count)
+                        dispatchGroup.leave()
+                    }
+                }
+            }
+            let groupWait = dispatchGroup.wait(timeout: .now() + 5)
+            if groupWait == .timedOut { print("timedOUt") }
+            else { print("done") }
+        }
+
             /*    let image = UIImage(named: "apple.png")
          do {
          try Disk.save(image!, to: .applicationSupport, as: "apple.png")
          }
          catch { print("error saving") }
          */
-        
     }
+    
+    func getFolderItems(contentClient:BOXContentClient ,folderID:String, completionHanlder: @escaping ([BoxFileBasics]?) -> Void) {
+        let folderItemsRequest:BOXFolderItemsRequest = contentClient.folderItemsRequest(withID: folderID)
+        var fileList = [BoxFileBasics]()
+        let dispatchGroup = DispatchGroup()
+        
+        DispatchQueue.global(qos: .userInitiated).async {
+            folderItemsRequest.perform { (items:[BOXItem]?, error:Error!) in
+                if error == nil && items != nil {
+                    for item in items! {
+                        if item.isFile == true {
+                            fileList.append(BoxFileBasics(name: item.name, modelID: item.modelID, version: item.etag))
+                            print(item.name, item.modelID, item.etag, fileList.count)
+                        }
+                        else if item.isFolder == true {
+                            dispatchGroup.enter()
+                            self.getFolderItems(contentClient: contentClient, folderID: item.modelID) { filesInSubFolder in
+                                if filesInSubFolder != nil { fileList.append(contentsOf: filesInSubFolder!) }
+                                dispatchGroup.leave()
+                            }
+                        }
+                    }
+                }
+                else { print("error getting folder") }
+                dispatchGroup.wait()
+                DispatchQueue.main.async {
+                    print("func: ", folderID, fileList.count)
+                    completionHanlder(fileList)
+                }
+            }
+        }
+        
+        
+   }
     
     @IBAction func getFiles(_ sender: UIButton) {
         let contentClient:BOXContentClient = BOXContentClient.default()
@@ -72,39 +116,14 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        print("prev",UserDefaultsManager.storedFiles?.count)
+        //print("prev",UserDefaultsManager.storedFiles?.count)
         //UserDefaultsManager.storedFiles = nil
-        print("after",UserDefaultsManager.storedFiles?.count)
+        //print("after",UserDefaultsManager.storedFiles?.count)
         
         //UserDefaultsManager.lastSyncedDate = Date()
         //print(UserDefaultsManager.lastSyncedDate)
     }
     
-    
-    func getFolderItems(contentClient:BOXContentClient ,folderID:String) {
-        let folderItemsRequest:BOXFolderItemsRequest = contentClient.folderItemsRequest(withID: folderID)
-        
-        //DispatchQueue.global(qos: .userInitiated).async {
-            
-        
-            
-            folderItemsRequest.perform { (items:[BOXItem]?, error:Error!) in
-                
-                if error == nil && items != nil {
-                    for item in items! {
-                        if item.isFile == true {
-                            self.onlineFiles.append(BoxFileBasics(name: item.name, modelID: item.modelID, version: item.etag))
-                            print(item.name, item.modelID, item.etag)
-                        }
-                        else if item.isFolder == true { self.getFolderItems(contentClient: contentClient, folderID: item.modelID)  }
-                    }
-                }
-                else { print("error getting folder") }
-                
-            }
-        //}
-        print("online files: ", onlineFiles.count)
-    }
     
     
     func boxFileDownload(contentClient:BOXContentClient, boxItem: BOXItem){
