@@ -57,12 +57,6 @@
                                     <action selector="logOut:" destination="BYZ-38-t0r" eventType="touchUpInside" id="h4F-Jx-2Uk"/>
                                 </connections>
                             </button>
-                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" editable="NO" textAlignment="natural" selectable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="w7e-jU-GR7">
-                                <rect key="frame" x="2" y="159" width="316" height="259"/>
-                                <color key="backgroundColor" red="0.99953407049999998" green="0.98835557699999999" blue="0.47265523669999998" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
-                            </textView>
                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="5" translatesAutoresizingMaskIntoConstraints="NO" id="1QP-Ct-wfN">
                                 <rect key="frame" x="85" y="136" width="150" height="19"/>
                                 <subviews>
@@ -104,18 +98,13 @@
                         <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
                             <constraint firstItem="fZl-Ss-z4s" firstAttribute="top" secondItem="Z7o-ex-6RU" secondAttribute="bottom" constant="2" id="5oq-0f-CBG"/>
-                            <constraint firstItem="6Tk-OE-BBY" firstAttribute="trailing" secondItem="w7e-jU-GR7" secondAttribute="trailing" constant="2" id="BGv-r3-Wvb"/>
                             <constraint firstItem="1QP-Ct-wfN" firstAttribute="top" secondItem="jvZ-S7-Me9" secondAttribute="bottom" constant="4" id="K90-zk-7zc"/>
                             <constraint firstItem="fSG-8v-pEb" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="Nzf-dH-kg7"/>
-                            <constraint firstItem="fSG-8v-pEb" firstAttribute="top" secondItem="w7e-jU-GR7" secondAttribute="bottom" constant="2" id="PZN-II-Mj3"/>
                             <constraint firstItem="jvZ-S7-Me9" firstAttribute="top" secondItem="fZl-Ss-z4s" secondAttribute="bottom" constant="2" id="RXr-bp-bO8"/>
-                            <constraint firstItem="w7e-jU-GR7" firstAttribute="leading" secondItem="6Tk-OE-BBY" secondAttribute="leading" constant="2" id="SU4-jG-dd1"/>
                             <constraint firstItem="Z7o-ex-6RU" firstAttribute="top" secondItem="AWV-6C-Ki2" secondAttribute="bottom" constant="2" id="TEc-3m-Cxm"/>
-                            <constraint firstItem="w7e-jU-GR7" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="bbq-mG-BsN"/>
                             <constraint firstItem="1QP-Ct-wfN" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="cFN-fM-ePm"/>
                             <constraint firstItem="jvZ-S7-Me9" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="dpa-gH-e91"/>
                             <constraint firstItem="fZl-Ss-z4s" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="eMi-Oc-MRa"/>
-                            <constraint firstItem="w7e-jU-GR7" firstAttribute="top" secondItem="1QP-Ct-wfN" secondAttribute="bottom" constant="4" id="ggC-TR-JAt"/>
                             <constraint firstItem="AWV-6C-Ki2" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="ioh-hP-sO2"/>
                             <constraint firstItem="AWV-6C-Ki2" firstAttribute="top" secondItem="8bC-Xf-vdC" secondAttribute="top" constant="16" id="jUg-Dn-48y"/>
                             <constraint firstItem="Z7o-ex-6RU" firstAttribute="centerX" secondItem="8bC-Xf-vdC" secondAttribute="centerX" id="tRZ-vP-vbx"/>
@@ -128,7 +117,7 @@
                         <outlet property="currentBytesLabel" destination="HpN-sq-tib" id="2eh-pG-ohJ"/>
                         <outlet property="downloadProgress" destination="C2e-UZ-nbb" id="flQ-a9-IL0"/>
                         <outlet property="downloadProgressStack" destination="1QP-Ct-wfN" id="DPL-wM-g96"/>
-                        <outlet property="statusText" destination="w7e-jU-GR7" id="lOy-eK-yiP"/>
+                        <outlet property="imageView" destination="fSG-8v-pEb" id="meJ-XS-ZiZ"/>
                         <outlet property="totalBytesLabel" destination="33s-7A-7P4" id="mgQ-4T-0Dk"/>
                     </connections>
                 </viewController>

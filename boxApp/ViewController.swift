@@ -11,21 +11,6 @@ import BoxContentSDK
 import SystemConfiguration
 import Disk
 
-struct BoxFileBasics: Codable {
-    let name: String
-    let modelID: String
-    var version: String
-}
-
-extension BoxFileBasics: Equatable {
-    static func == (lhs: BoxFileBasics, rhs: BoxFileBasics) -> Bool {
-        return lhs.modelID == rhs.modelID && lhs.name == rhs.name && lhs.version == rhs.version
-    }
-}
-
-enum UpdateManagerConstants {
-    static let timeoutInterval:DispatchTimeInterval = .seconds(30)
-}
 
 class ViewController: UIViewController {
     //let contentClient:BOXContentClient = BOXContentClient.default()
@@ -37,8 +22,9 @@ class ViewController: UIViewController {
     var filesToDownload = [BoxFileBasics]()
     var filesToDelete = [BoxFileBasics]()
     
+    @IBOutlet weak var imageView: UIImageView!
+    
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
-    @IBOutlet weak var statusText: UITextView!
     @IBOutlet weak var downloadProgress: ProgressBar!
     @IBOutlet weak var currentBytesLabel: UILabel!
     @IBOutlet weak var totalBytesLabel: UILabel!
@@ -50,16 +36,16 @@ class ViewController: UIViewController {
         let contentClient:BOXContentClient = BOXContentClient.default()
         
         if self.connectedToNetwork() == false {
-            self.statusText.text.append(contentsOf: "No internet\n")
-            //print("no internet")
+            print("no internet")
             return
         }
-        else { self.statusText.text.append(contentsOf: "Internet connection... OK\n") }
+        else { // self.statusText.text.append(contentsOf: "Internet connection... OK\n")
+        }
         
         self.onlineFiles.removeAll()
         
         if contentClient.session.isAuthorized() == false {
-            self.statusText.text.append(contentsOf: "Not logged in to Box account. Logging in...\n")
+            //self.statusText.text.append(contentsOf: "Not logged in to Box account. Logging in...\n")
             contentClient.authenticate{(user, error) in
             if error == nil && user != nil { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in self.getDownloadFileList() })}
             } }
@@ -78,7 +64,6 @@ class ViewController: UIViewController {
     
     func getItemsFromBaseFolder(contentClient: BOXContentClient, completionHandler: @escaping(DispatchTimeoutResult)-> Void) {
         let dispatchGroup = DispatchGroup()
-        self.statusText.text.append(contentsOf: "Getting list of files...\n")
         DispatchQueue.global(qos: .userInitiated).async {
             dispatchGroup.enter()
             let workItem = DispatchWorkItem {
@@ -93,13 +78,9 @@ class ViewController: UIViewController {
             let groupWait = dispatchGroup.wait(timeout: .now() + UpdateManagerConstants.timeoutInterval)
             if groupWait == .timedOut {
                 print("timedout")
-                DispatchQueue.main.async(execute: {self.statusText.text.append(contentsOf: "Connection timed out. Check internet connenction\n") })
                 workItem.cancel()
             }
-            else {
-                DispatchQueue.main.async(execute: { self.statusText.text.append(contentsOf: "Total no. of remote files: \(self.onlineFiles.count)\nDone getting Box files\n") })
-                print("done")
-            }
+            else { print("done") }
             DispatchQueue.main.async(execute: {
                 self.activityIndicator.stopAnimating()
                 self.activityIndicator.isHidden = true
@@ -162,14 +143,12 @@ class ViewController: UIViewController {
             }
         }
         else { newFiles.append(contentsOf: onlineFiles) }
-        filesToDownload.append(contentsOf: newFiles + changedFiles)
-        DispatchQueue.main.async { self.statusText.text.append(contentsOf: "No. of files to be downloaded: \(self.filesToDownload.count)\n") }
+        //DispatchQueue.main.async { self.statusText.text.append(contentsOf: "No. of files to be downloaded: \(self.filesToDownload.count)\n") }
         print("to download:\(filesToDownload.count)", "changed: \(changedFiles.count)", "new: \(newFiles.count)")
     }
     
     @IBAction func downloadFiles(_ sender: UIButton) {
         let contentClient: BOXContentClient = BOXContentClient.default()
-        
         
         let totalSizeGroup = DispatchGroup()
         var totalSize = 0
@@ -191,7 +170,10 @@ class ViewController: UIViewController {
             }
             
             totalSizeGroup.wait()
-            self.boxFilesDownload(contentClient: contentClient, filesToDownload: self.filesToDownload)
+            self.boxFilesDownload(contentClient: contentClient, filesToDownload: self.filesToDownload, completion: {
+                self.fileHousekeeping()
+                self.showApple()
+            })
             DispatchQueue.main.async {
                 self.totalBytesLabel.text = ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file)
                 self.currentBytesLabel.text = "0.0"
@@ -202,45 +184,26 @@ class ViewController: UIViewController {
             }
         }
     }
-    /*
-    @IBAction func getFiles(_ sender: UIButton) {
-        let contentClient:BOXContentClient = BOXContentClient.default()
-        contentClient.authenticate(completionBlock: {(user:BOXUser?, error:Error?) -> Void in
-            if error == nil {
-                if user != nil { self.connectionStatus.text = user!.login as String }
-                
-                let folderItemsRequest:BOXFolderItemsRequest = contentClient.folderItemsRequest(withID: "0")
-                folderItemsRequest.perform { (items:[BOXItem]?, error:Error?) in
-                    if error == nil && items != nil {
-                        self.numberOfFiles.text = String(items!.count)
-                        for item in items! {
-                            if item.isFile { self.boxFileDownload(contentClient: contentClient, boxItem: item) }
-                        }
-                    }
-                    else { print("error getting folder items: ", error!) }
-                }
-            }
-            else { print("error logging in: ", error!)}
-        })
-        
-    }
-     */
+   
     @IBAction func logOut(_ sender: UIButton) { BOXContentClient.logOutAll() }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.activityIndicator.isHidden = true
         self.downloadProgressStack.isHidden = true
+        
+        //UserDefaultsManager.storedFiles?.removeAll()
         //print("prev",UserDefaultsManager.storedFiles?.count)
-        //UserDefaultsManager.storedFiles = nil
+        //UserDefaultsManager.storedFiles = [BoxFileBasics]()
         //print("after",UserDefaultsManager.storedFiles?.count)
         
         //UserDefaultsManager.lastSyncedDate = Date()
         //print(UserDefaultsManager.lastSyncedDate)
     }
     
-    func boxFilesDownload(contentClient:BOXContentClient, filesToDownload: [BoxFileBasics]){
+    func boxFilesDownload(contentClient:BOXContentClient, filesToDownload: [BoxFileBasics], completion:@escaping ()->Void){
         let dispatchGroup = DispatchGroup()
+        DispatchQueue.main.async { self.downloadProgress.reset() }
         
         DispatchQueue.global(qos: .userInitiated).async {
             
@@ -257,17 +220,33 @@ class ViewController: UIViewController {
                     //print(boxFileBasics.name, totalTransferred, totalExpected)
                 }, completion: { (error:Error!) in
                     dispatchGroup.leave()
-                    /*
-                     if error == nil {
-                     do {
-                     let image = UIImage(contentsOfFile: localFilePath)
-                     try Disk.save(image!, to: .applicationSupport, as: boxFileBasics.name)
-                     }
-                     catch { print("error saving file") }
-                     
-                     }
-                     else { print("DOWNLOADING FILE ERROR: \(error)") }
-                     */
+                    if error == nil {
+                        if file.name.hasSuffix(".jpg") {
+                            if let image = UIImage(contentsOfFile: localFilePath) {
+                                do {
+                                    try Disk.save(image, to: .applicationSupport, as: file.name)
+                                    print("File saved:\(file.name)")
+                                }
+                                catch { print("boxFilesDownload: Error saving IMAGE: \(file.name)") }
+                            }
+                            else { print("boxFilesDownload: Error saving IMAGE to temp folder: \(file.name)") }
+                        }
+                        else {
+                            do {
+                                let data = try Data(contentsOf: URL(fileURLWithPath: localFilePath))
+                                do {
+                                    try Disk.save(data, to: .applicationSupport, as: file.name)
+                                    print("File saved:\(file.name)")
+                                }
+                                catch { print("boxFilesDownload: Error saving FILE: \(file.name)") }
+                            }
+                            catch { print("boxFilesDownload: Error saving FILE to temp folder: \(file.name)") }
+                        }
+                        if self.newFiles.contains(file) { UserDefaultsManager.addFileToList(fileDetails: file) }
+                        else if self.changedFiles.contains(file) { UserDefaultsManager.updateFileInList(fileDetails: file) }
+                        else { print("boxFilesDownload: Error updating offline file list") }
+                    }
+                    else { print("boxFilesDownload: Error downloading file: \(file.name)") }
                 } )
             }
             
@@ -275,9 +254,38 @@ class ViewController: UIViewController {
             DispatchQueue.main.async {
                 self.activityIndicator.stopAnimating()
                 self.activityIndicator.isHidden = true
-                self.statusText.text.append(contentsOf: "Finished downloading files\n")
+                //self.statusText.text.append(contentsOf: "Finished downloading files\n")
+            }
+            completion()
+        }
+    }
+    
+    private func fileHousekeeping() {
+        if UserDefaultsManager.storedFiles != nil {
+            var filesToDelete = UserDefaultsManager.storedFiles!
+            for file in onlineFiles { filesToDelete = filesToDelete.filter { $0 != file } }
+            if filesToDelete.count == 0 {
+                print("No files to delete")
+                return
+            }
+            for file in filesToDelete {
+                do {
+                    try Disk.remove(file.name, from: .applicationSupport)
+                    UserDefaultsManager.deleteFileFromList(fileModelID: file.modelID)
+                    print("Deleted file: \(file.name)")
+                }
+                catch { print("fileHouseKeeping: Error removing file: \(file.name)") }
             }
         }
+        else { print("No offline files") }
+    }
+    
+    private func showApple() {
+        do {
+            let image = try Disk.retrieve("apple.jpg", from: .applicationSupport, as: UIImage.self)
+            DispatchQueue.main.sync { self.imageView.image = image }
+        }
+        catch { }
     }
     
     private func connectedToNetwork() -> Bool {

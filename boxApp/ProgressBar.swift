@@ -16,7 +16,7 @@ struct ProgressFile {
 class ProgressBar: UIProgressView {
     private var files = [ProgressFile]()
     var totalBytes: Int64 = 0
-    var transferredBytes: Int64 = 0
+    private var transferredBytes: Int64 = 0
     
     func addFile(file: ProgressFile) { self.files.append(file) }
     
@@ -26,6 +26,8 @@ class ProgressBar: UIProgressView {
             self.updateProgressbar()
         }
     }
+    
+    func reset() { self.files.removeAll() }
     
     private func updateProgressbar() {
             self.transferredBytes = 0
