@@ -22,17 +22,13 @@ class ViewController: UIViewController {
     var filesToDownload = [BoxFileBasics]()
     var filesToDelete = [BoxFileBasics]()
     
-    @IBOutlet weak var imageView: UIImageView!
+    //@IBOutlet weak var imageView: UIImageView!
     
-    @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
-    @IBOutlet weak var downloadProgress: ProgressBar!
-    @IBOutlet weak var currentBytesLabel: UILabel!
-    @IBOutlet weak var totalBytesLabel: UILabel!
-    @IBOutlet weak var downloadProgressStack: UIStackView!
+    let progressView = ProgressView()
+    
     
     @IBAction func checkFiles(_ sender: UIButton) {
-        self.activityIndicator.isHidden = false
-        self.activityIndicator.startAnimating()
+        self.progressView.startIndicator()
         let contentClient:BOXContentClient = BOXContentClient.default()
         
         if self.connectedToNetwork() == false {
@@ -47,19 +43,10 @@ class ViewController: UIViewController {
         if contentClient.session.isAuthorized() == false {
             //self.statusText.text.append(contentsOf: "Not logged in to Box account. Logging in...\n")
             contentClient.authenticate{(user, error) in
-            if error == nil && user != nil { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in self.getDownloadFileList() })}
+                if error == nil && user != nil { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in self.getDownloadFileList() })}
             } }
-        
+            
         else { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in self.getDownloadFileList() })}
-        
-        //DispatchQueue.main.async { self.activityIndicator.stopAnimating() }
-       
-        /*    let image = UIImage(named: "apple.png")
-         do {
-         try Disk.save(image!, to: .applicationSupport, as: "apple.png")
-         }
-         catch { print("error saving") }
-         */
     }
     
     func getItemsFromBaseFolder(contentClient: BOXContentClient, completionHandler: @escaping(DispatchTimeoutResult)-> Void) {
@@ -82,8 +69,8 @@ class ViewController: UIViewController {
             }
             else { print("done") }
             DispatchQueue.main.async(execute: {
-                self.activityIndicator.stopAnimating()
-                self.activityIndicator.isHidden = true
+                self.progressView.stopIndicator()
+                
             })
             completionHandler(groupWait)
         }
@@ -103,21 +90,21 @@ class ViewController: UIViewController {
                             //print(item.name, item.modelID, item.etag, fileList.count)
                         }
                         /*
-                        else if item.isFolder == true {
-                            dispatchGroup.enter()
-                            self.getFolderItems(contentClient: contentClient, folderID: item.modelID) { filesInSubFolder in
-                                if filesInSubFolder != nil { fileList.append(contentsOf: filesInSubFolder!) }
-                                dispatchGroup.leave()
-                            }
-                        }
-                     */
+                         else if item.isFolder == true {
+                         dispatchGroup.enter()
+                         self.getFolderItems(contentClient: contentClient, folderID: item.modelID) { filesInSubFolder in
+                         if filesInSubFolder != nil { fileList.append(contentsOf: filesInSubFolder!) }
+                         dispatchGroup.leave()
+                         }
+                         }
+                         */
                     }
                 }
                 else { print("error getting folder") }
                 dispatchGroup.wait()
                 //DispatchQueue.main.async {
-                 //   print("func: ", folderID, fileList.count)
-                    completionHanlder(fileList)
+                //   print("func: ", folderID, fileList.count)
+                completionHanlder(fileList)
                 //}
             }
         }
@@ -151,48 +138,49 @@ class ViewController: UIViewController {
         let contentClient: BOXContentClient = BOXContentClient.default()
         
         let totalSizeGroup = DispatchGroup()
-        var totalSize = 0
-        self.activityIndicator.isHidden = false
-        self.activityIndicator.startAnimating()
         DispatchQueue.global(qos: .userInitiated).async {
             
+            var  progressFileList = [ProgressFile]()
             for file in self.filesToDownload {
                 totalSizeGroup.enter()
                 
                 let fileRequest:BOXFileRequest = contentClient.fileInfoRequest(withID: file.modelID)
                 fileRequest.perform(completion: { (boxFile, error) in
                     if error == nil && boxFile != nil {
-                        print(totalSize, boxFile!.size)
-                        totalSize += Int(truncating: boxFile!.size)
+                        //print(file.modelID, totalSize, boxFile!.size)
+                        progressFileList.append(ProgressFile(fileID: file.modelID, bytesTransferred: 0, totalBytes: Int64(truncating: boxFile!.size)))
                         totalSizeGroup.leave()
                     }
                 })
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + UpdateManagerConstants.timeoutInterval, execute: { fileRequest.cancel() })
             }
             
             totalSizeGroup.wait()
+            DispatchQueue.main.async { self.progressView.startTracking(withFiles: progressFileList) }
+            
             self.boxFilesDownload(contentClient: contentClient, filesToDownload: self.filesToDownload, completion: {
                 self.fileHousekeeping()
-                self.showApple()
             })
-            DispatchQueue.main.async {
-                self.totalBytesLabel.text = ByteCountFormatter.string(fromByteCount: Int64(totalSize), countStyle: .file)
-                self.currentBytesLabel.text = "0.0"
-                self.downloadProgress.progress = 0.0
-                self.downloadProgress.totalBytes = Int64(totalSize)
-        
-                self.downloadProgressStack.isHidden = false
-            }
+            
         }
     }
-   
+    
     @IBAction func logOut(_ sender: UIButton) { BOXContentClient.logOutAll() }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.activityIndicator.isHidden = true
-        self.downloadProgressStack.isHidden = true
+        //self.progressView.isHidden = true
         
-        //UserDefaultsManager.storedFiles?.removeAll()
+        //self.progressView.frame = CGRect(x: 0, y: 0, width: 200, height: 40)
+        self.view.addSubview(self.progressView)
+        
+        self.view.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint(item: progressView, attribute: .centerX, relatedBy: .equal, toItem: self.view , attribute: .centerX, multiplier: 1, constant: 0).isActive = true
+        NSLayoutConstraint(item: progressView, attribute: .centerY, relatedBy: .equal, toItem: self.view, attribute: .centerY, multiplier: 1, constant: 0).isActive = true
+        NSLayoutConstraint(item: progressView, attribute: .leading, relatedBy: .equal, toItem: self.view, attribute: .leading, multiplier: 1, constant: 2).isActive = true
+        NSLayoutConstraint(item: progressView, attribute: .trailing, relatedBy: .equal, toItem: self.view, attribute: .trailing, multiplier: 1, constant: -2).isActive = true
+        UserDefaultsManager.storedFiles?.removeAll()
         //print("prev",UserDefaultsManager.storedFiles?.count)
         //UserDefaultsManager.storedFiles = [BoxFileBasics]()
         //print("after",UserDefaultsManager.storedFiles?.count)
@@ -203,7 +191,6 @@ class ViewController: UIViewController {
     
     func boxFilesDownload(contentClient:BOXContentClient, filesToDownload: [BoxFileBasics], completion:@escaping ()->Void){
         let dispatchGroup = DispatchGroup()
-        DispatchQueue.main.async { self.downloadProgress.reset() }
         
         DispatchQueue.global(qos: .userInitiated).async {
             
@@ -211,11 +198,10 @@ class ViewController: UIViewController {
                 let localFilePath: String = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(file.modelID).path
                 let downloadRequest = contentClient.fileDownloadRequest(withID: file.modelID, toLocalFilePath: localFilePath)
                 
-                DispatchQueue.main.async { self.downloadProgress.addFile(file: ProgressFile(fileID: file.modelID, bytesTransferred: 0)) }
                 
                 dispatchGroup.enter()
                 downloadRequest?.perform(progress: { (totalTransferred, totalExpected) in
-                    DispatchQueue.main.async { self.downloadProgress.updateFileProgress(fileID: file.modelID, bytesTransferred: totalTransferred) }
+                    DispatchQueue.main.async { self.progressView.updateFileProgress(fileID: file.modelID, bytesTransferred: totalTransferred) }
                     //update progress bar
                     //print(boxFileBasics.name, totalTransferred, totalExpected)
                 }, completion: { (error:Error!) in
@@ -252,8 +238,7 @@ class ViewController: UIViewController {
             
             dispatchGroup.wait()
             DispatchQueue.main.async {
-                self.activityIndicator.stopAnimating()
-                self.activityIndicator.isHidden = true
+                self.progressView.stopIndicator()
                 //self.statusText.text.append(contentsOf: "Finished downloading files\n")
             }
             completion()
@@ -282,8 +267,8 @@ class ViewController: UIViewController {
     
     private func showApple() {
         do {
-            let image = try Disk.retrieve("apple.jpg", from: .applicationSupport, as: UIImage.self)
-            DispatchQueue.main.sync { self.imageView.image = image }
+            //let image = try Disk.retrieve("apple.jpg", from: .applicationSupport, as: UIImage.self)
+            //DispatchQueue.main.sync { self.imageView.image = image }
         }
         catch { }
     }
@@ -313,6 +298,6 @@ class ViewController: UIViewController {
         return (isReachable && !needsConnection)
     }
     
-
+    
 }
 

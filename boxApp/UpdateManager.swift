@@ -26,3 +26,7 @@ extension BoxFileBasics: Equatable {
 enum UpdateManagerConstants {
     static let timeoutInterval:DispatchTimeInterval = .seconds(30)
 }
+
+class UpdateManager {
+    
+}

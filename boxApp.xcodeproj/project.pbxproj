@@ -16,7 +16,7 @@
 		FE2239801FD3F25A00A54DAD /* UserDefaultsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */; };
 		FE3CA2D51FDCEEF700D5BCB2 /* UpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE3CA2D41FDCEEF700D5BCB2 /* UpdateManager.swift */; };
 		FE5A44031F9F986F00C26FA6 /* Disk.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FE5A44021F9F986F00C26FA6 /* Disk.framework */; };
-		FED9145B1FDC412E003BED3D /* ProgressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FED9145A1FDC412E003BED3D /* ProgressBar.swift */; };
+		FEA9DA2D1FDD084300EEF5F9 /* ProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FEA9DA2C1FDD084300EEF5F9 /* ProgressView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,7 +31,7 @@
 		FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsManager.swift; sourceTree = "<group>"; };
 		FE3CA2D41FDCEEF700D5BCB2 /* UpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateManager.swift; sourceTree = "<group>"; };
 		FE5A44021F9F986F00C26FA6 /* Disk.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Disk.framework; path = Carthage/Build/iOS/Disk.framework; sourceTree = "<group>"; };
-		FED9145A1FDC412E003BED3D /* ProgressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressBar.swift; sourceTree = "<group>"; };
+		FEA9DA2C1FDD084300EEF5F9 /* ProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProgressView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,7 +70,7 @@
 				FE20B1DC1F96550D00EAFDFB /* AppDelegate.swift */,
 				FE20B1DE1F96550D00EAFDFB /* ViewController.swift */,
 				FE3CA2D41FDCEEF700D5BCB2 /* UpdateManager.swift */,
-				FED9145A1FDC412E003BED3D /* ProgressBar.swift */,
+				FEA9DA2C1FDD084300EEF5F9 /* ProgressView.swift */,
 				FE22397F1FD3F25A00A54DAD /* UserDefaultsManager.swift */,
 				FE20B1E01F96550D00EAFDFB /* Main.storyboard */,
 				FE20B1E31F96550D00EAFDFB /* Assets.xcassets */,
@@ -184,9 +184,9 @@
 			files = (
 				FE20B1DF1F96550D00EAFDFB /* ViewController.swift in Sources */,
 				FE20B1DD1F96550D00EAFDFB /* AppDelegate.swift in Sources */,
-				FED9145B1FDC412E003BED3D /* ProgressBar.swift in Sources */,
 				FE3CA2D51FDCEEF700D5BCB2 /* UpdateManager.swift in Sources */,
 				FE2239801FD3F25A00A54DAD /* UserDefaultsManager.swift in Sources */,
+				FEA9DA2D1FDD084300EEF5F9 /* ProgressView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

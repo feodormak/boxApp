@@ -8,10 +8,6 @@
 
 import UIKit
 
-struct ProgressFile {
-    let fileID:String
-    var bytesTransferred: Int64
-}
 
 class ProgressBar: UIProgressView {
     private var files = [ProgressFile]()
