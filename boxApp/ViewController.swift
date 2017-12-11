@@ -12,157 +12,136 @@ import SystemConfiguration
 import Disk
 
 
-class ViewController: UIViewController {
-    //let contentClient:BOXContentClient = BOXContentClient.default()
-    var onlineFiles = [BoxFileBasics]()
-    //var onlineFiles = SynchronizedArray<BoxFileBasics>()
+enum UpdateManagerState {
+    case begin
+    case checking
+    case noUpdate
+    case updateAvailable
+    case noInternet
+    case downloading
+    case error
+    case complete
+}
+
+class ViewController: UIViewController, UpdateManagerDelegate {
     
-    var newFiles = [BoxFileBasics]()
-    var changedFiles = [BoxFileBasics]()
-    var filesToDownload = [BoxFileBasics]()
-    var filesToDelete = [BoxFileBasics]()
-    
-    //@IBOutlet weak var imageView: UIImageView!
+    private let updateManager = UpdateManager()
+    private var updateManagerState: UpdateManagerState = .begin {
+        didSet {
+            switch updateManagerState{
+            case .checking: self.mainButton.isEnabled = false
+            case .noUpdate, .complete:
+                self.mainButton.isHidden = true
+                self.mainButton.isEnabled = false
+            case .updateAvailable:
+                self.mainButton.isEnabled = true
+                self.mainButton.setTitle("Download updates", for: .normal)
+            case .downloading:
+                self.mainButton.isEnabled = true
+                self.mainButton.setTitle("Cancel", for: .normal)
+            case .noInternet, .error:
+                self.mainButton.isHidden = false
+                self.mainButton.isEnabled = true
+                self.mainButton.setTitle("Check for updates", for: .normal)
+            case .begin : break
+            }
+        }
+    }
     
     let progressView = ProgressView()
+    let statusLabel: UILabel = {
+       let label = UILabel()
+        label.text = "Ready"
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 12)
+        label.backgroundColor = .clear
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    let mainButton: UIButton = {
+       let button = UIButton()
+        button.setTitle("Check for updates", for: .normal)
+        button.backgroundColor = .clear
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 12)
+        button.setTitleColor(.black, for: .normal)
+        button.setTitleColor(.gray, for: .highlighted)
+        //button.tintColor = .black
+        button.layer.cornerRadius = 10
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.black.cgColor
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.addTarget(self, action: #selector(mainButtonTapped(_:)), for: .touchUpInside)
+        return button
+    }()
     
-    
-    @IBAction func checkFiles(_ sender: UIButton) {
-        self.progressView.startIndicator()
-        let contentClient:BOXContentClient = BOXContentClient.default()
-        
-        if self.connectedToNetwork() == false {
-            print("no internet")
-            return
-        }
-        else { // self.statusText.text.append(contentsOf: "Internet connection... OK\n")
-        }
-        
-        self.onlineFiles.removeAll()
-        
-        if contentClient.session.isAuthorized() == false {
-            //self.statusText.text.append(contentsOf: "Not logged in to Box account. Logging in...\n")
-            contentClient.authenticate{(user, error) in
-                if error == nil && user != nil { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in self.getDownloadFileList() })}
-            } }
-            
-        else { self.getItemsFromBaseFolder(contentClient: contentClient, completionHandler: { _ in self.getDownloadFileList() })}
-    }
-    
-    func getItemsFromBaseFolder(contentClient: BOXContentClient, completionHandler: @escaping(DispatchTimeoutResult)-> Void) {
-        let dispatchGroup = DispatchGroup()
-        DispatchQueue.global(qos: .userInitiated).async {
-            dispatchGroup.enter()
-            let workItem = DispatchWorkItem {
-                self.getFolderItems(contentClient: contentClient, folderID: "0") { fileList in
-                    if fileList != nil { self.onlineFiles.append(contentsOf: fileList!) }
-                    print("main", self.onlineFiles.count)
-                    dispatchGroup.leave()
-                }
-            }
-            DispatchQueue.global(qos: .userInitiated).async(execute: workItem)
-            
-            let groupWait = dispatchGroup.wait(timeout: .now() + UpdateManagerConstants.timeoutInterval)
-            if groupWait == .timedOut {
-                print("timedout")
-                workItem.cancel()
-            }
-            else { print("done") }
-            DispatchQueue.main.async(execute: {
-                self.progressView.stopIndicator()
-                
-            })
-            completionHandler(groupWait)
+    @objc private func mainButtonTapped(_ sender: UIButton) {
+        switch self.updateManagerState {
+        case .begin, .noInternet, .error: self.checkFiles()
+        case .updateAvailable: self.downloadFiles()
+        case .downloading : self.cancelDownload()
+        case .checking, .noUpdate, .complete: break
         }
     }
     
-    func getFolderItems(contentClient:BOXContentClient ,folderID:String, completionHanlder: @escaping ([BoxFileBasics]?) -> Void) {
-        let folderItemsRequest:BOXFolderItemsRequest = contentClient.folderItemsRequest(withID: folderID)
-        var fileList = [BoxFileBasics]()
-        let dispatchGroup = DispatchGroup()
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            folderItemsRequest.perform { (items:[BOXItem]?, error:Error!) in
-                if error == nil && items != nil {
-                    for item in items! {
-                        if item.isFile == true {
-                            fileList.append(BoxFileBasics(name: item.name, modelID: item.modelID, version: item.etag))
-                            //print(item.name, item.modelID, item.etag, fileList.count)
-                        }
-                        /*
-                         else if item.isFolder == true {
-                         dispatchGroup.enter()
-                         self.getFolderItems(contentClient: contentClient, folderID: item.modelID) { filesInSubFolder in
-                         if filesInSubFolder != nil { fileList.append(contentsOf: filesInSubFolder!) }
-                         dispatchGroup.leave()
-                         }
-                         }
-                         */
-                    }
-                }
-                else { print("error getting folder") }
-                dispatchGroup.wait()
-                //DispatchQueue.main.async {
-                //   print("func: ", folderID, fileList.count)
-                completionHanlder(fileList)
-                //}
-            }
-        }
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + UpdateManagerConstants.timeoutInterval, execute: { folderItemsRequest.cancel() })
-    }
-    
-    func getDownloadFileList() {
-        newFiles.removeAll()
-        changedFiles.removeAll()
-        filesToDownload.removeAll()
-        
-        if let offlineFiles = UserDefaultsManager.storedFiles{
-            self.filesToDownload = self.onlineFiles
-            
-            for file in offlineFiles{ filesToDownload = filesToDownload.filter { $0 != file } }
-            
-            for file in filesToDownload {
-                switch (offlineFiles.filter{ $0.modelID == file.modelID }.count) {
-                case 0: newFiles.append(file)
-                case 1: changedFiles.append(file)
-                default: break
-                }
-            }
-        }
-        else { newFiles.append(contentsOf: onlineFiles) }
-        //DispatchQueue.main.async { self.statusText.text.append(contentsOf: "No. of files to be downloaded: \(self.filesToDownload.count)\n") }
-        print("to download:\(filesToDownload.count)", "changed: \(changedFiles.count)", "new: \(newFiles.count)")
-    }
-    
-    @IBAction func downloadFiles(_ sender: UIButton) {
+    private func checkFiles() {
+        self.progressView.resetView()
         let contentClient: BOXContentClient = BOXContentClient.default()
-        
-        let totalSizeGroup = DispatchGroup()
-        DispatchQueue.global(qos: .userInitiated).async {
-            
-            var  progressFileList = [ProgressFile]()
-            for file in self.filesToDownload {
-                totalSizeGroup.enter()
-                
-                let fileRequest:BOXFileRequest = contentClient.fileInfoRequest(withID: file.modelID)
-                fileRequest.perform(completion: { (boxFile, error) in
-                    if error == nil && boxFile != nil {
-                        //print(file.modelID, totalSize, boxFile!.size)
-                        progressFileList.append(ProgressFile(fileID: file.modelID, bytesTransferred: 0, totalBytes: Int64(truncating: boxFile!.size)))
-                        totalSizeGroup.leave()
+        self.progressView.startIndicator()
+        self.updateManagerState = .checking
+        self.statusLabel.text = "Checking for updates..."
+        updateManager.checkFiles(contentClient: contentClient, completion: ({ (completionStatus, numberOfFiles) in
+            DispatchQueue.main.async {
+                self.progressView.stopIndicator()
+                switch completionStatus {
+                case .successful:
+                    if numberOfFiles != nil {
+                        if numberOfFiles! == 0 {
+                            self.statusLabel.text = "All files are up to file"
+                            self.updateManagerState = .noUpdate
+                        }
+                        else {
+                            self.statusLabel.text = "Update available"
+                            self.updateManagerState = .updateAvailable
+                        }
                     }
-                })
-                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + UpdateManagerConstants.timeoutInterval, execute: { fileRequest.cancel() })
+                case .error:
+                    self.statusLabel.text = "Error occur. Please try again."
+                    self.updateManagerState = .error
+                case .noConnection:
+                    self.statusLabel.text =  "No internet connection!"
+                    self.updateManagerState = .noInternet
+                }
             }
-            
-            totalSizeGroup.wait()
-            DispatchQueue.main.async { self.progressView.startTracking(withFiles: progressFileList) }
-            
-            self.boxFilesDownload(contentClient: contentClient, filesToDownload: self.filesToDownload, completion: {
-                self.fileHousekeeping()
-            })
-            
+        }))
+    }
+    
+    private func downloadFiles() {
+        self.updateManagerState = .downloading
+        let contentClient: BOXContentClient = BOXContentClient.default()
+        self.progressView.startIndicator()
+        self.statusLabel.text = "Downloading files..."
+        updateManager.downloadFiles(contentClient: contentClient) { completionStatus in
+            DispatchQueue.main.async {
+                switch completionStatus {
+                case .successful:
+                    self.statusLabel.text = "Files successfully updated"
+                    self.updateManagerState = .complete
+                case .error:
+                    self.statusLabel.text = "Error downloading files. Please try again"
+                    self.updateManagerState = .error
+                case .noConnection:
+                    self.statusLabel.text = "No internet connection"
+                    self.updateManagerState = .noInternet
+                }
+                self.progressView.stopIndicator()
+            }
         }
+    }
+    
+    private func cancelDownload() {
+        let contentClient: BOXContentClient = BOXContentClient.default()
+        updateManager.cancelDownloads(contentClient: contentClient)
+        self.updateManagerState = .error
     }
     
     @IBAction func logOut(_ sender: UIButton) { BOXContentClient.logOutAll() }
@@ -173,14 +152,26 @@ class ViewController: UIViewController {
         
         //self.progressView.frame = CGRect(x: 0, y: 0, width: 200, height: 40)
         self.view.addSubview(self.progressView)
-        
+        self.view.addSubview(self.statusLabel)
+        self.view.addSubview(self.mainButton)
+       
+        self.updateManager.delegate = self
         self.view.translatesAutoresizingMaskIntoConstraints = false
+        
+        //UserDefaultsManager.storedFiles?.removeAll()
+        
         
         NSLayoutConstraint(item: progressView, attribute: .centerX, relatedBy: .equal, toItem: self.view , attribute: .centerX, multiplier: 1, constant: 0).isActive = true
         NSLayoutConstraint(item: progressView, attribute: .centerY, relatedBy: .equal, toItem: self.view, attribute: .centerY, multiplier: 1, constant: 0).isActive = true
         NSLayoutConstraint(item: progressView, attribute: .leading, relatedBy: .equal, toItem: self.view, attribute: .leading, multiplier: 1, constant: 2).isActive = true
         NSLayoutConstraint(item: progressView, attribute: .trailing, relatedBy: .equal, toItem: self.view, attribute: .trailing, multiplier: 1, constant: -2).isActive = true
-        UserDefaultsManager.storedFiles?.removeAll()
+        NSLayoutConstraint(item: statusLabel, attribute: .leading, relatedBy: .equal, toItem: self.view, attribute: .leading, multiplier: 1, constant: 2).isActive = true
+        NSLayoutConstraint(item: statusLabel, attribute: .trailing, relatedBy: .equal, toItem: self.view, attribute: .trailing, multiplier: 1, constant: -2).isActive = true
+        NSLayoutConstraint(item: statusLabel, attribute: .bottom, relatedBy: .equal, toItem: progressView, attribute: .top, multiplier: 1, constant: 2).isActive = true
+        NSLayoutConstraint(item: mainButton, attribute: .top, relatedBy: .equal, toItem: progressView, attribute: .bottom, multiplier: 1, constant: 4).isActive = true
+        NSLayoutConstraint(item: mainButton, attribute: .centerX, relatedBy: .equal, toItem: self.view, attribute: .centerX, multiplier: 1, constant: 0).isActive = true
+        NSLayoutConstraint(item: mainButton, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 200).isActive = true
+        
         //print("prev",UserDefaultsManager.storedFiles?.count)
         //UserDefaultsManager.storedFiles = [BoxFileBasics]()
         //print("after",UserDefaultsManager.storedFiles?.count)
@@ -189,114 +180,25 @@ class ViewController: UIViewController {
         //print(UserDefaultsManager.lastSyncedDate)
     }
     
-    func boxFilesDownload(contentClient:BOXContentClient, filesToDownload: [BoxFileBasics], completion:@escaping ()->Void){
-        let dispatchGroup = DispatchGroup()
-        
-        DispatchQueue.global(qos: .userInitiated).async {
-            
-            for file in filesToDownload {
-                let localFilePath: String = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(file.modelID).path
-                let downloadRequest = contentClient.fileDownloadRequest(withID: file.modelID, toLocalFilePath: localFilePath)
-                
-                
-                dispatchGroup.enter()
-                downloadRequest?.perform(progress: { (totalTransferred, totalExpected) in
-                    DispatchQueue.main.async { self.progressView.updateFileProgress(fileID: file.modelID, bytesTransferred: totalTransferred) }
-                    //update progress bar
-                    //print(boxFileBasics.name, totalTransferred, totalExpected)
-                }, completion: { (error:Error!) in
-                    dispatchGroup.leave()
-                    if error == nil {
-                        if file.name.hasSuffix(".jpg") {
-                            if let image = UIImage(contentsOfFile: localFilePath) {
-                                do {
-                                    try Disk.save(image, to: .applicationSupport, as: file.name)
-                                    print("File saved:\(file.name)")
-                                }
-                                catch { print("boxFilesDownload: Error saving IMAGE: \(file.name)") }
-                            }
-                            else { print("boxFilesDownload: Error saving IMAGE to temp folder: \(file.name)") }
-                        }
-                        else {
-                            do {
-                                let data = try Data(contentsOf: URL(fileURLWithPath: localFilePath))
-                                do {
-                                    try Disk.save(data, to: .applicationSupport, as: file.name)
-                                    print("File saved:\(file.name)")
-                                }
-                                catch { print("boxFilesDownload: Error saving FILE: \(file.name)") }
-                            }
-                            catch { print("boxFilesDownload: Error saving FILE to temp folder: \(file.name)") }
-                        }
-                        if self.newFiles.contains(file) { UserDefaultsManager.addFileToList(fileDetails: file) }
-                        else if self.changedFiles.contains(file) { UserDefaultsManager.updateFileInList(fileDetails: file) }
-                        else { print("boxFilesDownload: Error updating offline file list") }
-                    }
-                    else { print("boxFilesDownload: Error downloading file: \(file.name)") }
-                } )
-            }
-            
-            dispatchGroup.wait()
-            DispatchQueue.main.async {
-                self.progressView.stopIndicator()
-                //self.statusText.text.append(contentsOf: "Finished downloading files\n")
-            }
-            completion()
-        }
+    func startTracking(withFiles: [ProgressFile]) {
+        DispatchQueue.main.async { self.progressView.startTracking(withFiles: withFiles) }
     }
     
-    private func fileHousekeeping() {
-        if UserDefaultsManager.storedFiles != nil {
-            var filesToDelete = UserDefaultsManager.storedFiles!
-            for file in onlineFiles { filesToDelete = filesToDelete.filter { $0 != file } }
-            if filesToDelete.count == 0 {
-                print("No files to delete")
-                return
-            }
-            for file in filesToDelete {
-                do {
-                    try Disk.remove(file.name, from: .applicationSupport)
-                    UserDefaultsManager.deleteFileFromList(fileModelID: file.modelID)
-                    print("Deleted file: \(file.name)")
-                }
-                catch { print("fileHouseKeeping: Error removing file: \(file.name)") }
-            }
-        }
-        else { print("No offline files") }
+    func updateFileProgress(fileID: String, bytesTransferred: Int64) {
+        DispatchQueue.main.async { self.progressView.updateFileProgress(fileID: fileID, bytesTransferred: bytesTransferred) }
     }
     
     private func showApple() {
+        /*
         do {
             //let image = try Disk.retrieve("apple.jpg", from: .applicationSupport, as: UIImage.self)
             //DispatchQueue.main.sync { self.imageView.image = image }
         }
         catch { }
+         */
     }
     
-    private func connectedToNetwork() -> Bool {
-        
-        var zeroAddress = sockaddr_in()
-        zeroAddress.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
-        zeroAddress.sin_family = sa_family_t(AF_INET)
-        
-        guard let defaultRouteReachability = withUnsafePointer(to: &zeroAddress, {
-            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                SCNetworkReachabilityCreateWithAddress(nil, $0)
-            }
-        }) else {
-            return false
-        }
-        
-        var flags: SCNetworkReachabilityFlags = []
-        if !SCNetworkReachabilityGetFlags(defaultRouteReachability, &flags) {
-            return false
-        }
-        
-        let isReachable = flags.contains(.reachable)
-        let needsConnection = flags.contains(.connectionRequired)
-        
-        return (isReachable && !needsConnection)
-    }
+    
     
     
 }

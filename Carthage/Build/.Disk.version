@@ -1,9 +1,9 @@
 {
-  "commitish" : "0.3.1",
+  "commitish" : "0.3.3",
   "iOS" : [
     {
       "name" : "Disk",
-      "hash" : "b8d47d3a0b92c448e5945c16c6e4a3ea1fbea810cc70d40ae30a8b1d8a187638"
+      "hash" : "86a691486dc2dbc63394e711a4a8276ef1c80ace5d0497ef8ba2f0f8b7d1583f"
     }
   ]
 }

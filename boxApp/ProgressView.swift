@@ -145,7 +145,7 @@ class ProgressView: UIView {
         NSLayoutConstraint(item: self.filesStack, attribute: .top, relatedBy: .equal, toItem: progressBar, attribute: .bottom, multiplier: 1, constant: 4).isActive = true
         
         self.translatesAutoresizingMaskIntoConstraints = false
-        self.backgroundColor = UIColor.lightGray
+        self.backgroundColor = .clear
         //self.activityIndicator.startAnimating()
     }
     
@@ -166,7 +166,12 @@ class ProgressView: UIView {
     
     func startIndicator() { self.activityIndicator.startAnimating() }
     func stopIndicator() { self.activityIndicator.stopAnimating() }
-
+    func resetView() {
+        self.progressBar.isHidden = true
+        self.filesStack.isHidden = true
+        self.bytesStack.isHidden = true
+    }
+    
     func updateFileProgress(fileID: String, bytesTransferred: Int64) {
         if let index = files.index(where: { $0.fileID == fileID }) {
             files[index].bytesTransferred = bytesTransferred

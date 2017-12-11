@@ -7,7 +7,7 @@
 //
 
 import UIKit
-//import Disk
+import Disk
 
 class ViewController: UIViewController {
     
@@ -29,16 +29,9 @@ class ViewController: UIViewController {
             print("Posts retrieved from network request successfully!")
             self.posts = posts
         }
-        
     }
     
     @IBAction func saveTapped(_ sender: Any) {
-        let image = UIImage(named:"apple.jpg")
-        do {
-            try Disk.save(image!, to: .temporary, as: "apple.jpg")
-        }
-        catch { }
-        /*
         // Disk is thorough when it comes to error handling, so make sure you understand why an error occurs when it does.
         do {
             try Disk.save(self.posts, to: .documents, as: "posts.json")
@@ -68,13 +61,11 @@ class ViewController: UIViewController {
         try? Disk.append(newPost, to: "posts.json", in: .documents)
         
         print("Saved posts to disk!")
-         */
     }
     
     @IBAction func retrieveTapped(_ sender: Any) {
         // We'll keep things simple here by using try?, but it's good practice to handle Disk with do, catch, try blocks
         // so you can make sure everything is going according to plan.
-        /*
         if let retrievedPosts = try? Disk.retrieve("posts.json", from: .documents, as: [Post].self) {
             // If you Option+Click 'retrievedPosts' above, you'll notice that its type is [Post]
             // Pretty neat, huh?
@@ -87,13 +78,11 @@ class ViewController: UIViewController {
             
             print("Retrieved posts from disk!")
         }
- */
     }
     
     // MARK: Networking
     
     func getPostsFromWeb(completion: (([Post]) -> Void)?) {
-        /*
         var urlComponents = URLComponents()
         urlComponents.scheme = "https"
         urlComponents.host = "jsonplaceholder.typicode.com"
@@ -128,7 +117,6 @@ class ViewController: UIViewController {
             }
         }
         task.resume()
- */
     }
 }
 
